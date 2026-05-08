@@ -58,6 +58,13 @@ pipeline {
             }
         }
     }
+    stage('Trivy Scan') {
+    steps {
+        sh '''
+        trivy image user-service:1.0
+        '''
+    }
+}
 
     post {
         success {
