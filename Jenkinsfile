@@ -48,7 +48,15 @@ pipeline {
             }
         }
     }
-
+        stage('Docker build') {
+            steps {
+                dir('user-service') {
+                    sh'''
+                    docker build -t user-service:1.0 .
+                    '''
+                }
+            }
+        }
     post {
         success {
             echo 'Pipeline SUCCESS'
