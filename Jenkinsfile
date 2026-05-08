@@ -51,20 +51,17 @@ pipeline {
         stage('Docker Build') {
             steps {
                 dir('user-service') {
-                    sh '''
-                    docker build -t user-service:1.0 .
-                    '''
+                    sh 'docker build -t user-service:1.0 .'
                 }
             }
         }
+
+        stage('Trivy Scan') {
+            steps {
+                sh 'trivy image user-service:1.0'
+            }
+        }
     }
-    stage('Trivy Scan') {
-    steps {
-        sh '''
-        trivy image user-service:1.0
-        '''
-    }
-}
 
     post {
         success {
