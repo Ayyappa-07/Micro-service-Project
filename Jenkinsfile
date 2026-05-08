@@ -61,24 +61,28 @@ pipeline {
                 sh 'trivy image user-service:1.0'
             }
         }
-    }   
-    stage('Push Docker Image') {
-       steps {
-         dir('user-service') {
-            sh '''
-            docker tag user-service:1.0 ayyuraj/user-service:1.0
-            docker push ayyuraj/user-service:1.0
-            '''
-         }
-     }
-  }
+
+        stage('Docker Push') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+
+                    docker tag user-service:1.0 $DOCKER_USER/user-service:1.0
+
+                    docker push $DOCKER_USER/user-service:1.0
+                    '''
+                }
+            }
+        }
+    }
 
     post {
         success {
             echo 'Pipeline SUCCESS'
         }
         failure {
-            echo 'Pipeline FAILED - check logs'
+            echo 'Pipeline FAILED check logs'
         }
     }
 }
