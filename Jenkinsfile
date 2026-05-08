@@ -47,8 +47,8 @@ pipeline {
                 }
             }
         }
-    }
-        stage('Docker build') {
+
+        stage('Docker Build') {
             steps {
                 dir('user-service') {
                     sh '''
@@ -57,7 +57,8 @@ pipeline {
                 }
             }
         }
-     }
+    }
+
     post {
         success {
             echo 'Pipeline SUCCESS'
