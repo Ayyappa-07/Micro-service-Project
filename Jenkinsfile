@@ -51,7 +51,7 @@ pipeline {
         stage('Docker build') {
             steps {
                 dir('user-service') {
-                    sh'''
+                    sh '''
                     docker build -t user-service:1.0 .
                     '''
                 }
