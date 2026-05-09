@@ -29,7 +29,7 @@ pipeline {
             }
         }
 
-        stage('Run Tests') {
+        stage('Test') {
             steps {
                 dir('user-service') {
                     sh 'mvn test'
@@ -61,8 +61,10 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 sh '''
-                    export KUBECONFIG=$KUBECONFIG
-                    kubectl set image deployment/user-service user-service=$DOCKER_IMAGE
+                    export PATH=$PATH:/var/jenkins_home/bin
+                    export KUBECONFIG=/var/jenkins_home/.kube/config
+
+                    kubectl set image deployment/user-service user-service=ayyuraj/user-service:1.0
                     kubectl rollout status deployment/user-service
                 '''
             }
@@ -71,11 +73,11 @@ pipeline {
 
     post {
         success {
-            echo "PIPELINE SUCCESS 🚀"
+            echo "PIPELINE SUCCESS "
         }
 
         failure {
-            echo "PIPELINE FAILED ❌"
+            echo "PIPELINE FAILED "
         }
     }
 }
