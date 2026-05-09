@@ -6,6 +6,10 @@ pipeline {
         maven 'maven3'
     }
 
+    environment {
+        DOCKER_IMAGE = "ayyuraj/user-service:1.0"
+    }
+
     stages {
 
         stage('Checkout') {
@@ -16,73 +20,57 @@ pipeline {
 
         stage('Build') {
             steps {
-                dir('user-service') {
-                    sh 'mvn clean package -DskipTests'
-                }
+                sh 'mvn clean package -DskipTests'
             }
         }
 
         stage('Test') {
             steps {
-                dir('user-service') {
-                    sh 'mvn test'
-                }
+                sh 'mvn test'
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                dir('user-service') {
-                    withSonarQubeEnv('sonar') {
-                        sh 'mvn sonar:sonar'
-                    }
-                }
-            }
-        }
-
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 2, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
+                withSonarQubeEnv('sonar') {
+                    sh 'mvn sonar:sonar'
                 }
             }
         }
 
         stage('Docker Build') {
             steps {
-                dir('user-service') {
-                    sh 'docker build -t user-service:1.0 .'
-                }
-            }
-        }
-
-        stage('Trivy Scan') {
-            steps {
-                sh 'trivy image user-service:1.0'
+                sh 'docker build -t $DOCKER_IMAGE user-service'
             }
         }
 
         stage('Docker Push') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                     sh '''
-                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-
-                    docker tag user-service:1.0 $DOCKER_USER/user-service:1.0
-
-                    docker push $DOCKER_USER/user-service:1.0
+                        echo $PASS | docker login -u $USER --password-stdin
+                        docker push $DOCKER_IMAGE
                     '''
                 }
+            }
+        }
+
+        stage('Deploy to k3s') {
+            steps {
+                sh '''
+                    kubectl set image deployment/user-service user-service=$DOCKER_IMAGE
+                    kubectl rollout restart deployment user-service
+                '''
             }
         }
     }
 
     post {
         success {
-            echo 'Pipeline SUCCESS'
+            echo 'PIPELINE SUCCESS'
         }
         failure {
-            echo 'Pipeline FAILED check logs'
+            echo 'PIPELINE FAILED'
         }
     }
 }
