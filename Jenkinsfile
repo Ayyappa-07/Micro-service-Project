@@ -2,21 +2,20 @@ pipeline {
     agent any
 
     tools {
-        maven 'maven3'
         jdk 'jdk17'
+        maven 'maven3'
     }
 
     environment {
         APP_NAME = "user-service"
         DOCKER_IMAGE = "ayyuraj/user-service:1.0"
-        KUBE_DEPLOY = "user-service"
+        KUBECONFIG = "/var/jenkins_home/.kube/config"
     }
 
     stages {
 
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
-                echo "Cloning GitHub repo"
                 git branch: 'main',
                     url: 'https://github.com/Ayyappa-07/Micro-service-Project.git'
             }
@@ -25,8 +24,15 @@ pipeline {
         stage('Build Maven') {
             steps {
                 dir('user-service') {
-                    echo "Building Spring Boot app"
                     sh 'mvn clean package -DskipTests'
+                }
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                dir('user-service') {
+                    sh 'mvn test'
                 }
             }
         }
@@ -34,41 +40,42 @@ pipeline {
         stage('Docker Build') {
             steps {
                 dir('user-service') {
-                    echo "Building Docker image"
-                    sh "docker build -t ${DOCKER_IMAGE} ."
+                    sh '''
+                        docker build -t $DOCKER_IMAGE .
+                    '''
                 }
             }
         }
 
         stage('Docker Push') {
             steps {
-                echo "Pushing image to Docker Hub"
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                    sh """
+                withCredentials([usernamePassword(credentialsId: 'docker-hub', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                    sh '''
                         echo $PASS | docker login -u $USER --password-stdin
-                        docker push ${DOCKER_IMAGE}
-                    """
+                        docker push $DOCKER_IMAGE
+                    '''
                 }
             }
         }
 
-        stage('Deploy to K3s') {
+        stage('Deploy to Kubernetes') {
             steps {
-                echo "Deploying to Kubernetes"
-                sh """
-                    kubectl set image deployment/${KUBE_DEPLOY} ${APP_NAME}=${DOCKER_IMAGE}
-                    kubectl rollout status deployment/${KUBE_DEPLOY}
-                """
+                sh '''
+                    export KUBECONFIG=$KUBECONFIG
+                    kubectl set image deployment/user-service user-service=$DOCKER_IMAGE
+                    kubectl rollout status deployment/user-service
+                '''
             }
         }
     }
 
     post {
         success {
-            echo "PIPELINE SUCCESS "
+            echo "PIPELINE SUCCESS 🚀"
         }
+
         failure {
-            echo "PIPELINE FAILED "
+            echo "PIPELINE FAILED ❌"
         }
     }
 }
