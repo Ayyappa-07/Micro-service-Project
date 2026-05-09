@@ -6,8 +6,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class HelloController {
 
-    @GetMapping("/")
-    public String home() {
-        return "User Service Running Successfully!";
+    @GetMapping("/hello")
+    public String hello() {
+        return "User Service Working";
     }
 }
