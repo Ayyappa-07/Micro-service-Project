@@ -73,11 +73,11 @@ pipeline {
 
     post {
         success {
-            echo "PIPELINE SUCCESS "
+            echo "PIPELINE SUCCESS TASK COMPLETED "
         }
 
         failure {
-            echo "PIPELINE FAILED "
+            echo "PIPELINE FAILED TASK INCOMPLETE "
         }
     }
 }
